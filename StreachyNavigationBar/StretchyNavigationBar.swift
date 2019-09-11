@@ -14,17 +14,12 @@ protocol StretchyNavigationBarDelegate: class {
 
 class StretchyNavigationBar: UIView {
 
-    @IBInspectable var maxStretch: CGFloat = 0
-    @IBInspectable var stretchTitle: Bool = false
-    @IBInspectable var titleMaxFontSize: CGFloat = 30
-    
-    weak var delegate: StretchyNavigationBarDelegate? {
-        didSet {
-            if let scrollView = delegate?.scrollViewForBarStretching() {
-                scrollView.delegate = self
-            }
-        }
-    }
+    @IBInspectable var barStretch: Bool = true
+    @IBInspectable var barMaxStretch: CGFloat = 200
+    @IBInspectable var titleStretch: Bool = false
+    @IBInspectable var titleMaxFontSize: CGFloat = 25
+    @IBInspectable var leadingBarButttonAnim: Bool = false
+    @IBInspectable var leadingBarButttonMaxRotation: CGFloat = -90
     
     fileprivate var heightConstraint: NSLayoutConstraint?
     fileprivate var navBarOriginalHeight: CGFloat = 0.0
@@ -32,7 +27,14 @@ class StretchyNavigationBar: UIView {
     fileprivate var lblTitleOriginalFontSize: CGFloat = 0.0
     fileprivate var lblTitleFont: UIFont?
     fileprivate var leadingBarButtton: UIButton?
-    
+
+    weak var delegate: StretchyNavigationBarDelegate? {
+        didSet {
+            if let scrollView = delegate?.scrollViewForBarStretching() {
+                scrollView.delegate = self
+            }
+        }
+    }
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -48,31 +50,43 @@ class StretchyNavigationBar: UIView {
             heightConstraint!.isActive = true
         }
         
-        if let superView = superview {
-            superView.bringSubviewToFront(self)
-            let bottomConstraints = superView.constraints.filter ({ $0.firstAttribute == .bottom ||  $0.secondAttribute == .bottom})
+        //execute code only when bar streching is on
+        if barStretch {
             
-            guard let headerBottomConstraint = (bottomConstraints.filter { (($0.firstItem?.isKind(of: UIScrollView.self) ?? false) && ($0.secondItem?.isKind(of: StretchyNavigationBar.self) ?? false) ) || (($0.secondItem?.isKind(of: UIScrollView.self) ?? false) && ($0.firstItem?.isKind(of: StretchyNavigationBar.self) ?? false))}).first else { return }
-            
-            if let scrollView = headerBottomConstraint.firstItem as? UIScrollView {
-                headerBottomConstraint.isActive = false
-                NSLayoutConstraint(item: scrollView, attribute: .top, relatedBy: .equal, toItem: superView, attribute: .top, multiplier: 1, constant: navBarOriginalHeight).isActive = true
+            if let superView = superview {
+                superView.bringSubviewToFront(self)
+                let bottomConstraints = superView.constraints.filter ({ $0.firstAttribute == .bottom ||  $0.secondAttribute == .bottom})
+                
+                guard let headerBottomConstraint = (bottomConstraints.filter { (($0.firstItem?.isKind(of: UIScrollView.self) ?? false) && ($0.secondItem?.isKind(of: StretchyNavigationBar.self) ?? false) ) || (($0.secondItem?.isKind(of: UIScrollView.self) ?? false) && ($0.firstItem?.isKind(of: StretchyNavigationBar.self) ?? false))}).first else { return }
+                
+                if let scrollView = headerBottomConstraint.firstItem as? UIScrollView {
+                    headerBottomConstraint.isActive = false
+                    NSLayoutConstraint(item: scrollView, attribute: .top, relatedBy: .equal, toItem: superView, attribute: .top, multiplier: 1, constant: navBarOriginalHeight).isActive = true
+                }
+                
+                if let scrollView2 = headerBottomConstraint.secondItem as? UIScrollView {
+                    headerBottomConstraint.isActive = false
+                    NSLayoutConstraint(item: scrollView2, attribute: .top, relatedBy: .equal, toItem: superView, attribute: .top, multiplier: 1, constant: navBarOriginalHeight).isActive = true
+                }
             }
             
-            if let scrollView2 = headerBottomConstraint.secondItem as? UIScrollView {
-                headerBottomConstraint.isActive = false
-                NSLayoutConstraint(item: scrollView2, attribute: .top, relatedBy: .equal, toItem: superView, attribute: .top, multiplier: 1, constant: navBarOriginalHeight).isActive = true
+        }
+        
+        //execute code only when title streching is on
+        if titleStretch {
+            lblTitle = subviews.filter ({ $0.isKind(of: UILabel.self) }).first as? UILabel
+            if let lblTitle = lblTitle, let lblFont = lblTitle.font {
+                lblTitleOriginalFontSize = lblFont.pointSize
+                lblTitleFont = lblTitle.font
             }
+            
         }
         
-        lblTitle = subviews.filter ({ $0.isKind(of: UILabel.self) }).first as? UILabel
-        if let lblTitle = lblTitle, let lblFont = lblTitle.font {
-            lblTitleOriginalFontSize = lblFont.pointSize
-            lblTitleFont = lblTitle.font
-        }
-        
-        if let leadingBarButtton = (subviews.filter { $0.isKind(of: UIButton.self) }.first) as? UIButton {
-            self.leadingBarButtton = leadingBarButtton
+        //execute code only when leading button animation is on
+        if leadingBarButttonAnim {
+            if let leadingBarButtton = (subviews.filter { $0.isKind(of: UIButton.self) }.first) as? UIButton {
+                self.leadingBarButtton = leadingBarButtton
+            }
         }
         
     }
@@ -88,26 +102,32 @@ class StretchyNavigationBar: UIView {
     
     func stretch(scrollView: UIScrollView) {
         let offsetY = scrollView.contentOffset.y
-        guard let heightConstraint = heightConstraint, let lblTitle = lblTitle else { return }
-        let newHeight = navBarOriginalHeight + -offsetY
-        guard offsetY <= 0, newHeight <= maxStretch else { return }
-        heightConstraint.constant = newHeight
+        guard offsetY <= 0 else { return }
+        if barStretch {
+            guard let heightConstraint = heightConstraint else { return }
+            let newHeight = navBarOriginalHeight + -offsetY
+            guard newHeight <= barMaxStretch else { return }
+            heightConstraint.constant = newHeight
+        }
 
-        if stretchTitle {
+        if titleStretch {
+            guard let lblTitle = lblTitle else { return }
             let newFontSize = lblTitleOriginalFontSize + (-offsetY * 0.1)
             if newFontSize <= titleMaxFontSize {
                 lblTitle.font = lblTitleFont?.withSize(newFontSize)
             }
         }
         
-        let totalHeightToStretch: CGFloat = maxStretch - navBarOriginalHeight
-        let totalDegreeToRotate: CGFloat = -90
-        let degreeToRotatePerMove = totalDegreeToRotate / totalHeightToStretch
-        let currentDegreeToMove = degreeToRotatePerMove * -offsetY
-        print(currentDegreeToMove)
-        let currentDegreeToMoveInRadian = CGFloat(deg2rad(Double(currentDegreeToMove)))
-        let rotation = CGAffineTransform(rotationAngle: currentDegreeToMoveInRadian)
-        self.leadingBarButtton?.transform = rotation
+        if leadingBarButttonAnim {
+            let totalHeightToStretch: CGFloat = barStretch ? barMaxStretch - navBarOriginalHeight : 130
+            guard -offsetY <= totalHeightToStretch else { return }
+            let degreeToRotatePerMove = leadingBarButttonMaxRotation / totalHeightToStretch
+            let currentDegreeToMove = degreeToRotatePerMove * -offsetY
+            print("currentDegreeToMove: \(currentDegreeToMove)")
+            let currentDegreeToMoveInRadian = CGFloat(deg2rad(Double(currentDegreeToMove)))
+            let rotation = CGAffineTransform(rotationAngle: currentDegreeToMoveInRadian)
+            self.leadingBarButtton?.transform = rotation
+        }
     }
     
     func deg2rad(_ number: Double) -> Double {

@@ -54,8 +54,14 @@
                                     </userDefinedRuntimeAttribute>
                                     <userDefinedRuntimeAttribute type="boolean" keyPath="stretchTitle" value="YES"/>
                                     <userDefinedRuntimeAttribute type="number" keyPath="titleMaxFontSize">
-                                        <real key="value" value="30"/>
+                                        <real key="value" value="28"/>
                                     </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="boolean" keyPath="barStretch" value="NO"/>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="barMaxStretch">
+                                        <real key="value" value="250"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="boolean" keyPath="titleStretch" value="YES"/>
+                                    <userDefinedRuntimeAttribute type="boolean" keyPath="leadingBarButttonAnim" value="YES"/>
                                 </userDefinedRuntimeAttributes>
                             </view>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="28" sectionFooterHeight="28" translatesAutoresizingMaskIntoConstraints="NO" id="7Qh-T0-NU2">
